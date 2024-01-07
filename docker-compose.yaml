@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  # Service pour votre application Node.js
+  nodejs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ".:/fastburger"
+    depends_on:
+      - mongodb
+
+  # Service pour la base de données MongoDB
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - mongodb-data:/data/db
+
+volumes:
+  mongodb-data:
+
+
+#mongosh --host 127.0.0.1 --port 27017 --username root -password example --authenticationDatabase admin
