@@ -106,7 +106,7 @@ app.put("/update", verify, async (req, res, next) => {
       { name: req.body.name },
       { popularity: req.body.popularity }
     );
-    console.log("Burger updated :", burger);
+    console.log("Burger updated: ", burger);
 
     const response = [
       {
@@ -131,11 +131,28 @@ app.put("/update", verify, async (req, res, next) => {
   }
 });
 
-app.delete("/delete", verifyMime, async (req, res, next) => {
+app.delete("/delete", verify, async (req, res, next) => {
   try {
     await mongoose.connect("mongodb://root:example@mongodb:27017/admin");
+    console.log("coinnected to db");
+    const burger = await burgerModel.deleteOne({ name: req.params.name });
+    console.log("Burger deleted: ", burger);
+    const response = [
+      {
+        data: burger,
+      },
+      {
+        message: "Burger deleted",
+      },
+      {
+        status: "ok",
+      },
+    ];
     res.status(200);
+    res.json(response);
   } catch (error) {
+    console.error("error", error);
+    res.status(500).send("error server");
   } finally {
     await mongoose.connection.close();
     console.log("Disconnected to db");
