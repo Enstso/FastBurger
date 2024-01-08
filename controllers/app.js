@@ -26,6 +26,23 @@ function verifyBody(req, res, next) {
   }
 }
 
+function response(data, code, res) {
+  const response = [
+    {
+      data: data.burger,
+    },
+    {
+      message: data.message,
+    },
+    {
+      status: data.status,
+    },
+  ];
+
+  res.status(code);
+  res.json(response);
+}
+
 const verify = [verifyBody, verifyMime];
 
 app.get("/burgers", verifyMime, async (req, res, next) => {
@@ -36,27 +53,15 @@ app.get("/burgers", verifyMime, async (req, res, next) => {
       {},
       { name: 1, popularity: 1, _id: 0 }
     );
-    const response = [
-      {
-        data: burgers,
-      },
-      {
-        status: "ok",
-      },
-    ];
-    res.status(200);
-    res.json(response);
+    data.message = "burgers found";
+    data.burger = burgers;
+    data.status = "ok";
+    response(data, 200, res);
   } catch (error) {
-    const response = [
-      {
-        message: "burgers not found",
-      },
-      {
-        status: "ko",
-      },
-    ];
-    res.json(response);
-    console.error("burgers not found", error);
+    data.message = error;
+    data.status = "ko";
+    data.burger = null;
+    response(data, 500, res);
   } finally {
     await mongoose.connection.close();
     console.log("Disconnected to db");
@@ -74,24 +79,15 @@ app.post("/create", verify, async (req, res, next) => {
     });
 
     const savedBurger = await burger.save();
-    console.log("Burger created :", savedBurger);
-
-    const response = [
-      {
-        data: savedBurger,
-      },
-      {
-        message: "Burger created",
-      },
-      {
-        status: "ok",
-      },
-    ];
-    res.status(201);
-    res.json(response);
+    data.burger = savedBurger;
+    data.message = "Burger created";
+    data.status = "ok";
+    response(data, 201, res);
   } catch (error) {
-    console.error("error", error);
-    res.status(500).send("error server");
+    data.message = error;
+    data.status = "ko";
+    data.burger = null;
+    response(data, 500, res);
   } finally {
     await mongoose.connection.close();
     console.log("Disconnected to db");
@@ -106,53 +102,35 @@ app.put("/update", verify, async (req, res, next) => {
       { name: req.body.name },
       { popularity: req.body.popularity }
     );
-    console.log("Burger updated: ", burger);
-
-    const response = [
-      {
-        data: burger,
-      },
-      {
-        message: "Burger updated",
-      },
-      {
-        status: "ok",
-      },
-    ];
-
-    res.status(200);
-    res.json(response);
+    (data.burger = burger),
+      (data.message = "Burger updated"),
+      (data.status = "ok"),
+      response(data, 200, res);
   } catch (error) {
-    console.error("error", error);
-    res.status(500).send("error server");
+    data.message = error;
+    data.status = "ko";
+    data.burger = null;
+    response(data, 500, res);
   } finally {
     await mongoose.connection.stop();
     console.log("Disconnected to db");
   }
 });
 
-app.delete("/delete", verify, async (req, res, next) => {
+app.delete("/delete", verifyMime, async (req, res, next) => {
   try {
     await mongoose.connect("mongodb://root:example@mongodb:27017/admin");
-    console.log("coinnected to db");
+    console.log("Connected to db");
     const burger = await burgerModel.deleteOne({ name: req.params.name });
-    console.log("Burger deleted: ", burger);
-    const response = [
-      {
-        data: burger,
-      },
-      {
-        message: "Burger deleted",
-      },
-      {
-        status: "ok",
-      },
-    ];
-    res.status(200);
-    res.json(response);
+    data.message = "Burger deleted";
+    data.burger = burger;
+    data.status = "ok";
+    response(data, 200, res);
   } catch (error) {
-    console.error("error", error);
-    res.status(500).send("error server");
+    data.message = error;
+    data.status = "ko";
+    data.burger = null;
+    response(data, 500, res);
   } finally {
     await mongoose.connection.close();
     console.log("Disconnected to db");
