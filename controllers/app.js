@@ -78,7 +78,7 @@ app.post("/create", verify, async (req, res, next) => {
 
     const response = [
       {
-        data: burger,
+        data: savedBurger,
       },
       {
         message: "Burger created",
@@ -101,9 +101,30 @@ app.post("/create", verify, async (req, res, next) => {
 app.put("/update", verify, async (req, res, next) => {
   try {
     await mongoose.connect("mongodb://root:example@mongodb:27017/admin");
+    console.log("Connected to db");
+    const burger = await burgerModel.updateOne(
+      { name: req.body.name },
+      { popularity: req.body.popularity }
+    );
+    console.log("Burger updated :", burger);
+
+    const response = [
+      {
+        data: burger,
+      },
+      {
+        message: "Burger updated",
+      },
+      {
+        status: "ok",
+      },
+    ];
 
     res.status(200);
+    res.json(response);
   } catch (error) {
+    console.error("error", error);
+    res.status(500).send("error server");
   } finally {
     await mongoose.connection.stop();
     console.log("Disconnected to db");
