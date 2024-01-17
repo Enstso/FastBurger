@@ -1,21 +1,29 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
 const burgerModel = require("../models/burger_model");
 const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 const port = 3000;
 
 function verifyMime(req, res, next) {
-  if (req.is("html") == true) {
-    next();
+  // if (req.is("html") == true) {
+  next();
+  /*
   } else {
     res.status(400).send("Bad request");
   }
+  */
 }
 
 function verifyBody(req, res, next) {
+  /*
   if (req.body.name != "") {
     if (req.body.popularity > 3 && req.body.popularity < 0) {
-      next();
+      */
+  next();
+  /*
     } else {
       res
         .status(400)
@@ -24,6 +32,7 @@ function verifyBody(req, res, next) {
   } else {
     res.status(400).send("the field name is required and respect the format");
   }
+  */
 }
 
 function response(data, code, res) {
@@ -45,7 +54,8 @@ function response(data, code, res) {
 
 const verify = [verifyBody, verifyMime];
 
-app.get("/burgers", verifyMime, async (req, res, next) => {
+app.get("/api/burgers", async (req, res) => {
+  let data = [];
   try {
     await mongoose.connect("mongodb://root:example@mongodb:27017/admin");
     console.log("Connected to db");
@@ -53,8 +63,8 @@ app.get("/burgers", verifyMime, async (req, res, next) => {
       {},
       { name: 1, popularity: 1, _id: 0 }
     );
-    data.message = "burgers found";
     data.burger = burgers;
+    data.message = "burgers found";
     data.status = "ok";
     response(data, 200, res);
   } catch (error) {
@@ -68,11 +78,35 @@ app.get("/burgers", verifyMime, async (req, res, next) => {
   }
 });
 
-app.post("/create", verify, async (req, res, next) => {
+app.get("/api/burger/:name", async (req, res) => {
+  let data = [];
   try {
     await mongoose.connect("mongodb://root:example@mongodb:27017/admin");
     console.log("Connected to db");
+    const burger = await burgerModel.findOne(
+      {name:req.params.name},
+      { name: 1, popularity: 1, _id: 0 }
+    );
+    data.burger = burger;
+    data.message = "burger found";
+    data.status = "ok";
+    response(data, 200, res);
+  } catch (error) {
+    data.message = error;
+    data.status = "ko";
+    data.burger = null;
+    response(data, 500, res);
+  } finally {
+    await mongoose.connection.close();
+    console.log("Disconnected to db");
+  }
+});
 
+app.post("/api/create", verify, async (req, res, next) => {
+  let data = [];
+  try {
+    await mongoose.connect("mongodb://root:example@mongodb:27017/admin");
+    console.log("Connected to db");
     const burger = new burgerModel({
       name: req.body.name,
       popularity: req.body.popularity,
@@ -84,9 +118,9 @@ app.post("/create", verify, async (req, res, next) => {
     data.status = "ok";
     response(data, 201, res);
   } catch (error) {
-    data.message = error;
-    data.status = "ko";
     data.burger = null;
+    data.message="error server";
+    data.status = "ko"
     response(data, 500, res);
   } finally {
     await mongoose.connection.close();
@@ -94,7 +128,8 @@ app.post("/create", verify, async (req, res, next) => {
   }
 });
 
-app.put("/update", verify, async (req, res, next) => {
+app.put("/api/update", async (req, res) => {
+  let data = [];
   try {
     await mongoose.connect("mongodb://root:example@mongodb:27017/admin");
     console.log("Connected to db");
@@ -102,14 +137,8 @@ app.put("/update", verify, async (req, res, next) => {
       { name: req.body.name },
       { popularity: req.body.popularity }
     );
-    (data.burger = burger),
-      (data.message = "Burger updated"),
-      (data.status = "ok"),
-      response(data, 200, res);
+    response(data, 204, res);
   } catch (error) {
-    data.message = error;
-    data.status = "ko";
-    data.burger = null;
     response(data, 500, res);
   } finally {
     await mongoose.connection.stop();
@@ -117,15 +146,13 @@ app.put("/update", verify, async (req, res, next) => {
   }
 });
 
-app.delete("/delete", verifyMime, async (req, res, next) => {
+app.delete("/api/delete/:name", verifyMime, async (req, res, next) => {
+  let data = [];
   try {
     await mongoose.connect("mongodb://root:example@mongodb:27017/admin");
     console.log("Connected to db");
     const burger = await burgerModel.deleteOne({ name: req.params.name });
-    data.message = "Burger deleted";
-    data.burger = burger;
-    data.status = "ok";
-    response(data, 200, res);
+    response(data, 204, res);
   } catch (error) {
     data.message = error;
     data.status = "ko";
